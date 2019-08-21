@@ -1,0 +1,11 @@
+body {font-family: sans-serif; }
+#code {width: 100%; height: 20em; }
+#results {text-align: center; border-collapse: collapse; margin-top: 0.5em; }
+#results td, #results th {border: solid black 1px; }
+#results td.valtrue {background: #7F7; }
+#results td.valfalse {background: #f77; }
+#results input {width: 5em; }
+#results td {width: 5em; }
+#error {margin: 1em 0; }
+#error {color: red; font-weight: bold; }
+fieldset {margin-top: 1em; }

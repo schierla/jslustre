@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Browser-based LUSTRE execeutor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <h1>Browser-based LUSTRE execeutor</h1>
+    <fieldset>
+        <legend>LUSTRE Code</legend>
+        <textarea id="code">-- simple counter node
+node counter () 
+    returns (c: int); 
+let 
+    c = 1 fby c + 1; 
+tel
+
+-- node that counts every second cycle
+node slowcounter() 
+    returns (c: int); 
+var a: bool; 
+let 
+    a = true fby not a; 
+    c = current(counter() when a); 
+tel</textarea>
+    </fieldset>
+
+    <fieldset>
+        <legend>Node</legend>
+        <label for="node">Node to execute:</label> <select id="node"></select>
+    </fieldset>
+
+    <fieldset>
+        <legend>Results</legend>
+        <button id="stepNode">Step</button> <button id="resetNode">Reset</button>
+        <table id="results">
+        </table>
+        <div id="error"></div>
+    </fieldset>
+
+    <script src="lusparser.js"></script>
+    <script src="lusexecutor.js"></script>
+    <script src="lusui.js"></script>
+</body>
+
+</html>
