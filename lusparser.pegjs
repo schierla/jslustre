@@ -1,6 +1,27 @@
 // basic lustre grammar without arrays and records 
 {
     var keywords = ["node", "function", "const", "returns", "assert", "if", "then", "else", "when", "current", "fby", "let", "tel", "or", "xor", "and", "not", "mod", "div" ]
+    function mkident(name) {
+        return {type: "var", name: name, toString: function() {return name; } };
+    }
+    function mkconst(value) {
+        return {type: "const", value: value, toString: function() {return value; } };
+    }
+    function mkbinop(name, op1, op2) {
+        return {type: "op", op: name, operands: [op1, op2], toString: function() {return op1 + " " + name + " " + op2; }};
+    }
+    function mkunop(name, op1) {
+        return {type: "op", op: name, operands: [op1], toString: function() {return name + " " + op1; }};
+    }
+    function mkcond(cond, iftrue, iffalse) {
+        return {type: "op", op: "?:", operands: [cond, iftrue, iffalse], toString: function() {return "if " + cond + " then " + iftrue + " else " + iffalse; }};
+    }
+    function mklist(values) {
+        return {type: "op", op: "list", operands: values, toString: function() {return "(" + values.join(", ") + ")"; }};
+    }
+    function mkcall(name, ops) {
+        return {type: "op", op: "call", name: name, operands: ops, toString: function() {return name + "(" + ops.join(", ") + ")"; }};
+    }
 }
 
 Nodes 
@@ -222,7 +243,7 @@ Left_List
 
 Left 
     = ident: Identifier { 
-        return {type: "ident", value: ident }; 
+        return mkident(ident); 
     }
 
 Assertion 
@@ -239,7 +260,7 @@ E1_Op
 E1 
     = left: E2 right: ( _ E1_Op _ E1 ) ? { 
         if(right != null) 
-            return {type: "op", op: right[1], operands: [left, right[3]]}; 
+            return mkbinop(right[1], left, right[3]); 
         else 
             return left; 
     }
@@ -249,7 +270,7 @@ E2_Op
 E2 
     = left: E3 right: ( _ E2_Op _ E2 ) ? { 
         if(right != null) 
-            return {type: "op", op: right[1], operands: [left, right[3]]}; 
+            return mkbinop(right[1], left, right[3]); 
         else 
             return left; 
     }
@@ -260,7 +281,7 @@ E3_Op
 E3 
     = left: E4 right: ( _ E3_Op _ E3 ) ? { 
         if(right != null) 
-            return {type: "op", op: right[1], operands: [left, right[3]]}; 
+            return mkbinop(right[1], left, right[3]); 
         else 
             return left; 
     }
@@ -270,7 +291,7 @@ E4_Op
 E4 
     = left: E5 right: ( _ E4_Op _ E4 ) ? { 
         if(right != null) 
-            return {type: "op", op: right[1], operands: [left, right[3]]}; 
+            return mkbinop(right[1], left, right[3]); 
         else 
             return left; 
     }
@@ -285,7 +306,7 @@ E5_Op
 E5 
     = left: E6 right: ( _ E5_Op _ E5 ) ? { 
         if(right != null) 
-            return {type: "op", op: right[1], operands: [left, right[3]]}; 
+            return mkbinop(right[1], left, right[3]); 
         else 
             return left; 
     }
@@ -294,7 +315,7 @@ E6_Op
     = "not" & [^a-zA-Z0-9_] { return "not"; }
 E6  
     = op: E6_Op _ right: E6 { 
-        return {type: "op", op: op, operands: [right]}; 
+        return mkunop(op, right); 
     }
     / left: E7 { 
         return left; 
@@ -308,7 +329,7 @@ E7
         var ret = left; 
         while(right.length > 0) {
             var op = right.shift();
-            ret = {type: "op", op: op[1], operands: [ret, op[3]]}; 
+            ret = mkbinop(op[1], ret, op[3]); 
         }
         return ret; 
     }
@@ -323,7 +344,7 @@ E8
         var ret = left; 
         while(right.length > 0) {
             var op = right.shift();
-            ret = {type: "op", op: op[1], operands: [ret, op[3]]}; 
+            ret = mkbinop(op[1], ret, op[3]); 
         }
         return ret; 
     }
@@ -333,7 +354,7 @@ E9_Op
 E9 
     = left: E10 right: ( _ E9_Op _ E9 ) ? { 
         if(right != null) 
-            return {type: "op", op: right[1], operands: [left, right[3]]}; 
+            return mkbinop(right[1], left, right[3]); 
         else 
             return left; 
     }
@@ -345,7 +366,7 @@ E10_Op
     / "#"
 E10 
     = op: E10_Op _ right: E10 { 
-        return {type: "op", op: op, operands: [right] }; 
+        return mkunop(op, right); 
     }
     / left: E11 { 
         return left;
@@ -353,22 +374,22 @@ E10
 
 E11 
     = value: Value { 
-        return {type: "const", value: value }; 
+        return mkconst(value); 
     }
     / call: Call { 
         return call; 
     }
     / ident: Identifier { 
-        return {type: "ident", value: ident }; 
+        return mkident(ident); 
     }
     / "(" _ list: Expression_List _ ")" { 
         if(list.length == 1) 
             return list[0];
         else 
-            return {type: "list", values: list}; 
+            return mklist(list); 
     }
     / "if" _ cond: Expression _ "then" _ thenexpr: Expression _ "else" _ elseexpr: Expression { 
-        return {type: "op", op: "?:", operands: [cond, thenexpr, elseexpr] };
+        return mkcond(cond, thenexpr, elseexpr);
     }
 
 
@@ -395,7 +416,7 @@ Field_Exp
 
 Call 
     = name: Identifier _ Pragma _ "(" _ operands: Expression_List ? _ ")" { 
-        return {type: "call", name: name, operands: operands == null ? [] : operands}; 
+        return mkcall(name, operands == null ? [] : operands); 
     }
 
 

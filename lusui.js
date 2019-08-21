@@ -4,20 +4,30 @@ var _results = document.getElementById("results");
 var _step = document.getElementById("stepNode");
 var _error = document.getElementById("error");
 var _reset = document.getElementById("resetNode");
+var _autostep = document.getElementById("autostep");
 var _inputrow = null;
 var inputs = [];
 var app = null;
 var state = {};
+var errorLocation = null;
+var lastNode = null;
+
+function highlightError() {
+    if(errorLocation) _code.setSelectionRange(errorLocation.start.offset, errorLocation.end.offset);
+}
 
 function updateCode() {
     try {
         app = lusparser.parse(_code.value);
         _error.innerText = "";
+        errorLocation = null;
     } catch(e) {
         app = {nodes: {}};
-        _code.focus();
-        _code.setSelectionRange(e.location.start.offset, e.location.start.offset);
-        _error.innerText = e.name + ": " + e.message + " \nLocation: Line " + e.location.start.line + ", column " + e.location.start.column;
+        _error.innerText = e.name + ": " + e.message;
+        if(e.location) {
+            errorLocation = e.location;
+            _error.innerText += "\nLocation: Line " + e.location.start.line + ", column " + e.location.start.column;
+        }
     }
     updateNodes();
 }
@@ -29,6 +39,7 @@ function updateNodes() {
         option.value = node; 
         option.appendChild(document.createTextNode(node));
         _node.appendChild(option);
+        if(node == lastNode) _node.value = node;
     }
     updateNode();
 }
@@ -56,8 +67,10 @@ function inputUi(type) {
 
 function updateNode() {
     var node = app.nodes[_node.value];
-    state = {};
     while(_results.firstChild) _results.removeChild(_results.firstChild);
+    state = {};
+    if(node == null) return;
+    lastNode = _node.value;
     _inputrow = document.createElement("tr");
     var _types = document.createElement("tr");
     var _header = document.createElement("tr");
@@ -69,7 +82,7 @@ function updateNode() {
     if(params.length > 0) {
         var _th = document.createElement("th");
         _th.appendChild(document.createTextNode("Inputs"));
-        _th.colSpan = params.length;
+        _th.colSpan = params.length; _th.className="header";
         _types.appendChild(_th);
     }
 
@@ -86,7 +99,7 @@ function updateNode() {
     if(returns.length > 0) {
         var _th = document.createElement("th");
         _th.appendChild(document.createTextNode("Results"));
-        _th.colSpan = returns.length;
+        _th.colSpan = returns.length; _th.className="header";
         _types.appendChild(_th);
     }
     for(var i=0; i<returns.length; i++) {
@@ -100,14 +113,14 @@ function updateNode() {
 
     if(locals.length > 0) {
         var _th = document.createElement("th");
-        _th.appendChild(document.createTextNode("Locals"));
-        _th.colSpan = locals.length;
-        _types.appendChild(_th);
+        _th.appendChild(document.createTextNode("Variables"));
+        _th.colSpan = locals.length; _th.className = "header local";
+        _types.appendChild(_th); 
     }
     for(var i=0; i<locals.length; i++) {
         var _th = document.createElement("th");
         _th.appendChild(document.createTextNode(locals[i].name));
-        _header.appendChild(_th);
+        _header.appendChild(_th); _th.className = "local";
 
         _inputrow.appendChild(document.createElement("td"));
     }
@@ -118,6 +131,7 @@ function updateNode() {
 }
 
 function stepNode() {
+    if(!app.nodes[_node.value]) return;
     try {
         var ret = lusexecutor.step(app, _node.value, inputs, state);
     } catch(e) {
@@ -147,8 +161,9 @@ function stepNode() {
 
     for(var i=0; i<locals.length; i++) {
         var _td = document.createElement("td"); 
-        _td.appendChild(document.createTextNode(state.values[locals[i].name]));
-        _td.className = "val" + state.values[locals[i].name];
+        var value = state._vars[locals[i].name];
+        _td.appendChild(document.createTextNode(value));
+        _td.className = "local val" + value; 
         _resultrow.appendChild(_td);
     }
 
@@ -158,14 +173,12 @@ function stepNode() {
 }
 
 function logState(key, state) {
-    var i = 0;
-    var shown = {_node: key };
-    for(var value in state.values) shown[value] = state.values[value];
+    var shown = {_: key };
+    for(var value in state._vars) shown[value] = state._vars[value];
     console.log(shown); 
     for(var statekey in state) {
-        if(state[statekey].values) {
-            i++; 
-            logState(key + "." + JSON.parse(statekey).name + "#" + i, state[statekey]);
+        if(state[statekey]._vars) {
+            logState(key + "." + statekey, state[statekey]);
         }
     }
 }
@@ -174,9 +187,16 @@ function resetNode() {
     updateNode();
 }
 
+function autostepNode() {
+    if(_autostep.checked) stepNode();
+}
+
 
 _code.addEventListener("change", updateCode);
+_code.addEventListener("focus", highlightError);
 _node.addEventListener("change", updateNode);
 _step.addEventListener("click", stepNode);
 _reset.addEventListener("click", resetNode);
 updateCode();
+
+setInterval(autostepNode, 1000);

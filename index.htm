@@ -2,12 +2,13 @@
 <html>
 
 <head>
-    <title>Browser-based LUSTRE execeutor</title>
+    <title>Browser-based LUSTRE Execeutor</title>
     <link rel="stylesheet" href="styles.css">
+    <meta charset="utf-8">
 </head>
 
 <body>
-    <h1>Browser-based LUSTRE execeutor</h1>
+    <h1>Browser-based LUSTRE Execeutor</h1>
     <fieldset>
         <legend>LUSTRE Code</legend>
         <textarea id="code">-- simple counter node
@@ -34,7 +35,7 @@ tel</textarea>
 
     <fieldset>
         <legend>Results</legend>
-        <button id="stepNode">Step</button> <button id="resetNode">Reset</button>
+        <button id="stepNode">Step</button> <button id="resetNode">Reset</button> <label><input type="checkbox" id="autostep">Auto-step at 1 Hz</label>
         <table id="results">
         </table>
         <div id="error"></div>
