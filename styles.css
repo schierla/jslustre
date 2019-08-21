@@ -1,6 +1,7 @@
 body {font-family: sans-serif; }
 h1 {text-align: center; }
-#code {width: 100%; height: 20em; }
+#code {width: 100%; height: 20em; resize: vertical; }
+#code.error {background: #fee; }
 #results {text-align: center; border-collapse: collapse; margin: 0.5em 0; }
 #results td, #results th {border: solid black 1px; }
 #results .valtrue {background: #7F7; }

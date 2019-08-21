@@ -262,7 +262,7 @@
                 return ret;
             },
         peg$c51 = function(name, type) { 
-                return {name: name, type: type}; 
+                return {name: name, type: type, location: location()}; 
             },
         peg$c52 = "enum",
         peg$c53 = peg$literalExpectation("enum", false),
@@ -334,7 +334,7 @@
                 return ret; 
             },
         peg$c74 = function(ident) { 
-                return mkident(ident); 
+                return mkident(location(), ident); 
             },
         peg$c75 = "assert",
         peg$c76 = peg$literalExpectation("assert", false),
@@ -350,7 +350,7 @@
         peg$c84 = function() { return "fby"; },
         peg$c85 = function(left, right) { 
                 if(right != null) 
-                    return mkbinop(right[1], left, right[3]); 
+                    return mkbinop(location(), right[1], left, right[3]); 
                 else 
                     return left; 
             },
@@ -379,7 +379,7 @@
         peg$c108 = peg$literalExpectation("not", false),
         peg$c109 = function() { return "not"; },
         peg$c110 = function(op, right) { 
-                return mkunop(op, right); 
+                return mkunop(location(), op, right); 
             },
         peg$c111 = "+",
         peg$c112 = peg$literalExpectation("+", false),
@@ -389,7 +389,7 @@
                 var ret = left; 
                 while(right.length > 0) {
                     var op = right.shift();
-                    ret = mkbinop(op[1], ret, op[3]); 
+                    ret = mkbinop(location(), op[1], ret, op[3]); 
                 }
                 return ret; 
             },
@@ -415,7 +415,7 @@
                 return left;
             },
         peg$c135 = function(value) { 
-                return mkconst(value); 
+                return mkconst(location(), value); 
             },
         peg$c136 = function(call) { 
                 return call; 
@@ -424,7 +424,7 @@
                 if(list.length == 1) 
                     return list[0];
                 else 
-                    return mklist(list); 
+                    return mklist(location(), list); 
             },
         peg$c138 = "if",
         peg$c139 = peg$literalExpectation("if", false),
@@ -433,7 +433,7 @@
         peg$c142 = "else",
         peg$c143 = peg$literalExpectation("else", false),
         peg$c144 = function(cond, thenexpr, elseexpr) { 
-                return mkcond(cond, thenexpr, elseexpr);
+                return mkcond(location(), cond, thenexpr, elseexpr);
             },
         peg$c145 = function(expr, exprs) {
                 var ret = [expr]; 
@@ -445,7 +445,7 @@
                 return {name: name, value: value}; 
             },
         peg$c147 = function(name, operands) { 
-                return mkcall(name, operands == null ? [] : operands); 
+                return mkcall(location(), name, operands == null ? [] : operands); 
             },
         peg$c148 = function(f) { 
                 return f; 
@@ -4943,26 +4943,26 @@
 
 
         var keywords = ["node", "function", "const", "returns", "assert", "if", "then", "else", "when", "current", "fby", "let", "tel", "or", "xor", "and", "not", "mod", "div" ]
-        function mkident(name) {
-            return {type: "var", name: name, toString: function() {return name; } };
+        function mkident(loc, name) {
+            return {type: "var", name: name, location: loc, toString: function() {return name; } };
         }
-        function mkconst(value) {
-            return {type: "const", value: value, toString: function() {return value; } };
+        function mkconst(loc, value) {
+            return {type: "const", value: value, location: loc, toString: function() {return value; } };
         }
-        function mkbinop(name, op1, op2) {
-            return {type: "op", op: name, operands: [op1, op2], toString: function() {return op1 + " " + name + " " + op2; }};
+        function mkbinop(loc, name, op1, op2) {
+            return {type: "op", op: name, operands: [op1, op2], location: loc, toString: function() {return op1 + " " + name + " " + op2; }};
         }
-        function mkunop(name, op1) {
-            return {type: "op", op: name, operands: [op1], toString: function() {return name + " " + op1; }};
+        function mkunop(loc, name, op1) {
+            return {type: "op", op: name, operands: [op1], location: loc, toString: function() {return name + " " + op1; }};
         }
-        function mkcond(cond, iftrue, iffalse) {
-            return {type: "op", op: "?:", operands: [cond, iftrue, iffalse], toString: function() {return "if " + cond + " then " + iftrue + " else " + iffalse; }};
+        function mkcond(loc, cond, iftrue, iffalse) {
+            return {type: "op", op: "?:", operands: [cond, iftrue, iffalse], location: loc, toString: function() {return "if " + cond + " then " + iftrue + " else " + iffalse; }};
         }
-        function mklist(values) {
-            return {type: "op", op: "list", operands: values, toString: function() {return "(" + values.join(", ") + ")"; }};
+        function mklist(loc, values) {
+            return {type: "op", op: "list", operands: values, location: loc, toString: function() {return "(" + values.join(", ") + ")"; }};
         }
-        function mkcall(name, ops) {
-            return {type: "op", op: "call", name: name, operands: ops, toString: function() {return name + "(" + ops.join(", ") + ")"; }};
+        function mkcall(loc, name, ops) {
+            return {type: "op", op: "call", name: name, operands: ops, location: loc, toString: function() {return name + "(" + ops.join(", ") + ")"; }};
         }
 
 

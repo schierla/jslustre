@@ -24,7 +24,10 @@
             else
                 return variables(expr.operands);
         } else {
-            throw new ExecutionException("VariableCollectionException", "Unknown type: " + expr.type);
+            throw new ExecutionError("VariableCollectionError", 
+                "Unknown type: " + expr.type, 
+                expr.location
+            );
         }
     }
 
@@ -63,7 +66,10 @@
 
     function checksize(array, size, expr) {
         if(array.length != size) {
-            throw new ExecutionException("EvaluationException", "Illegal number of arguments when evaluating '" + expr + "': Expected " + size + ", got " + array.length);
+            throw new ExecutionError("EvaluationError", 
+                "Illegal number of arguments when evaluating '" + expr + "': Expected " + size + ", got " + array.length, 
+                expr.location
+            );
         }
     }
 
@@ -71,6 +77,11 @@
         if (expr.type == "const") {
             return [expr.value];
         } else if (expr.type == "var") {
+            if(!(expr.name in values)) 
+                throw new ExecutionError("ExecutionError", 
+                "Variable '" + expr.name + "' is not declared.", 
+                expr.location
+            );    
             return [values[expr.name]];
         } else if (expr.type == "op") {
 
@@ -81,8 +92,8 @@
                     state[expr.toString()] = true;
                     return evaluate(context, expr.operands[0], values, state);
                 } else {
-                    state[expr.toString()] = true;
-                    return null;
+                    state[expr.toString()] = false;
+                    return [null];
                 }
             }
 
@@ -121,6 +132,11 @@
                 case "call": 
                     var key = expr.toString();
                     if (!(key in state)) state[key] = {};
+                    if(!context.nodes[expr.name]) 
+                        throw new ExecutionError("ExecutionError",
+                            "Node '" + expr.name + "' is not defined.", 
+                            expr.location
+                        );
                     return step(context, expr.name, args, state[key])
                 case "?:":
                     checksize(dargs, 3, expr); 
@@ -191,26 +207,36 @@
                         if(args[i]) num++;
                     return [num <= 1];
             }
-            throw new ExecutionException("EvaluationException", "Unknown operation: " + expr.op);
+            throw new ExecutionError("EvaluationError", 
+                "Unknown operation: " + expr.op, 
+                expr.location
+            );
         } else {
-            throw new ExecutionException("EvaluationException", "Unknown expression type: " + expr.type);
+            throw new ExecutionError("EvaluationError", 
+                "Unknown expression type: " + expr.type, 
+                expr.location
+            );
         }
     }
 
     function step(context, nodename, inputs, state) {
         var node = context.nodes[nodename];
         if(!node) 
-            throw new ExecutionException("ExecutionException", "Node '" + nodename + "' is not defined.");
+            throw new ExecutionError("ExecutionError", 
+                "Node '" + nodename + "' is not defined."
+            );
 
         var clocks = varclocks(context, nodename);
 
         var values = {};
         for (var name in context.consts) {
-            values[name] = context.consts[name].value;
+            values[name] = evaluate(context, context.consts[name].value, {}, {})[0];
         }
 
         if(inputs.length != node.header.params.length) 
-            throw new ExecutionException("ExecutionException", "Illegal argument count for '" + nodename + "': Expected " + node.header.params.length + ", got " + inputs.length + ".");
+            throw new ExecutionError("ExecutionError", 
+                "Illegal argument count for '" + nodename + "': Expected " + node.header.params.length + ", got " + inputs.length + "."
+            );
 
         for (var i = 0; i < node.header.params.length; i++) {
             values[node.header.params[i].name] = inputs[i];
@@ -236,15 +262,21 @@
                     if (leftclock != null && !(leftclock in values))
                         ready = false;
                     if(!(left[j] in clocks)) 
-                        throw new ExecutionException("ExecutionException", "Variable '" + left[j] + "' is not declared.");
+                        throw new ExecutionError("ExecutionError", 
+                            "Variable '" + left[j] + "' is not declared.",
+                            eq.left[j].location
+                        );
                 }
 
                 var right = variables(eq.right);
                 for (var j = 0; j < right.length; j++) {
                     if (!(right[j] in values))
-                        ready = false;
+                        ready = false;      
                     if(!(right[j] in clocks)) 
-                        throw new ExecutionException("ExecutionException", "Variable '" + right[j] + "' is not declared.");                        
+                        throw new ExecutionError("ExecutionError", 
+                            "Variable '" + right[j] + "' is not declared.",
+                            eq.right.location
+                        );                                  
                 }
 
                 if (ready) {
@@ -252,11 +284,22 @@
                         var ret = evaluate(context, eq.right, values, state);
 
                         if(ret === undefined) 
-                            throw new ExecutionException("ExecutionException", "Illegal value for assignment of '" + left.join("', '") + "'.");
+                            throw new ExecutionError("ExecutionError", 
+                                "Result of '" + eq.right + "' is not defined.",
+                                eq.right.location
+                            );
                         if(ret.length != left.length) 
-                            throw new ExecutionException("ExecutionException", "Incorrect result count in assignment of '" + left.join("', '") + "': Expected " + left.length + ", got " + ret.length + ".");
+                            throw new ExecutionError("ExecutionError", 
+                                "Incorrect result count in assignment of '" + left.join("', '") + "': Expected " + left.length + ", got " + ret.length + ".",
+                                eq.right.location    
+                            );
 
                         for (var j = 0; j < left.length; j++) {
+                            if(ret[j] === undefined) 
+                                throw new ExecutionError("ExecutionError", 
+                                    "Result of '" + eq.right + "' is not defined.",
+                                    eq.right.location
+                                );
                             values[left[j]] = ret[j];
                         }
                         progress = true;
@@ -271,14 +314,19 @@
         }
 
         if (missing.length > 0) {
-            throw new ExecutionException("ExecutionException", "Cannot calculate node '" + nodename + "', circular reference in the definition of '" + missing.join("', '") + "'");
+            throw new ExecutionError("ExecutionError", 
+                "Cannot calculate node '" + nodename + "', circular reference in the definition of '" + missing.join("', '") + "'"
+            );
         }
 
         for (var i = 0; i < node.body.equations.length; i++) {
             var eq = node.body.equations[i];
             if (eq.assert) {
                 if (!evaluate(context, eq.assert, values, state)) {
-                    throw new ExecutionException("AssertionException", "Assertion failed: " + eq.assert.toString());
+                    throw new ExecutionError("AssertionError", 
+                        "Assertion failed: " + eq.assert.toString(), 
+                        eq.assert.location
+                    );
                 }
             } else if (eq.right) {
                 var leftclock = clocks[variables(eq.left)[0]];
@@ -297,19 +345,20 @@
         return ret;
     }
 
-    function ExecutionException(name, message) {
+    function ExecutionError(name, message, location) {
         this.name = name;
         this.message = message;
+        this.location = location;
         // Use V8's native method if available, otherwise fallback
         if ("captureStackTrace" in Error)
-            Error.captureStackTrace(this, ExecutionException);
+            Error.captureStackTrace(this, ExecutionError);
         else
             this.stack = (new Error()).stack;
     }
     
-    ExecutionException.prototype = Object.create(Error.prototype);
-    ExecutionException.prototype.name = "ExeutionException";
-    ExecutionException.prototype.constructor = ExecutionException;
+    ExecutionError.prototype = Object.create(Error.prototype);
+    ExecutionError.prototype.name = "ExeutionError";
+    ExecutionError.prototype.constructor = ExecutionError;
 
     root.lusexecutor = {
         step: step

@@ -13,7 +13,8 @@ var errorLocation = null;
 var lastNode = null;
 
 function highlightError() {
-    if(errorLocation) _code.setSelectionRange(errorLocation.start.offset, errorLocation.end.offset);
+    if(errorLocation) 
+        _code.setSelectionRange(errorLocation.start.offset, errorLocation.end.offset);
 }
 
 function updateCode() {
@@ -21,10 +22,12 @@ function updateCode() {
         app = lusparser.parse(_code.value);
         _error.innerText = "";
         errorLocation = null;
+        _code.className = "";
     } catch(e) {
         app = {nodes: {}};
         _error.innerText = e.name + ": " + e.message;
         if(e.location) {
+            _code.className = "error";
             errorLocation = e.location;
             _error.innerText += "\nLocation: Line " + e.location.start.line + ", column " + e.location.start.column;
         }
@@ -134,8 +137,14 @@ function stepNode() {
     if(!app.nodes[_node.value]) return;
     try {
         var ret = lusexecutor.step(app, _node.value, inputs, state);
+        _code.className = "";
     } catch(e) {
         _error.innerText = e.name + ": " + e.message;
+        if(e.location) {
+            errorLocation = e.location;
+            _error.innerText += "\nLocation: Line " + e.location.start.line + ", column " + e.location.start.column;
+            _code.className = "error";
+        }        
         return;
     }
 
