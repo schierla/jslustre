@@ -6,6 +6,7 @@ h1 {text-align: center; }
 #results td, #results th {border: solid black 1px; }
 #results .valtrue {background: #7F7; }
 #results .valfalse {background: #f77; }
+#results .valnull {background: #eee; }
 #results .local {color: #777; }
 #results .header {background: #ccc; }
 #results input {width: 5em; }
