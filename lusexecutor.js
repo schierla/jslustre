@@ -132,12 +132,12 @@
                 case "call": 
                     var key = expr.toString();
                     if (!(key in state)) state[key] = {};
-                    if(!context.nodes[expr.name]) 
-                        throw new ExecutionError("ExecutionError",
-                            "Node '" + expr.name + "' is not defined.", 
-                            expr.location
-                        );
-                    return step(context, expr.name, args, state[key])
+                    try {
+                        return step(context, expr.name, args, state[key])
+                    } catch(e) {
+                        if(!e.location) e.location = expr.location;
+                        throw e;
+                    }
                 case "?:":
                     checksize(dargs, 3, expr); 
                     checksize(dargs[0], 1, expr);
