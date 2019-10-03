@@ -1,9 +1,9 @@
 # jslustre
-* JavaScript implementation of a parser / simulator for the synchronous data-flow langauge Lustre
+* JavaScript implementation of a parser / simulator for the synchronous data-flow language Lustre
 * Inspired by [Lustre](http://www-verimag.imag.fr/The-Lustre-Programming-Language-and.html) and [LUKE](https://www.it.uu.se/edu/course/homepage/pins/vt11/lustre)
 
 ## Supported features
-* Core Lustre langauge
+* Core Lustre language
 * Identifiers, Types, Constants, Variables
 * Functions, Nodes, Equations, Assertions, 
 * Expressions, Temporal operators
